@@ -1,6 +1,6 @@
 name: brain_dev_firebase_message
 description: "A brain_dev_firebase_message new Flutter project."
-version: 1.0.6
+version: 1.0.8
 homepage: https://github.com/Grafritz/brain_dev_firebase_message_plugin.git
 
 #  dart pub publish --dry-run   #// Vérifier avant chaque nouvelle version
@@ -29,14 +29,18 @@ dependencies:
   shared_preferences: ^2.5.3
 
   # rm -rf ~/.pub-cache/git
-  brain_dev_tools: ^1.0.6
-  brain_dev_business: ^1.0.6
+  # clear && flutter clean && rm -rf ~/.pub-cache/git && flutter pub get
+  brain_dev_tools: ^1.0.8
+    #path: /Users/jeanfritzduverseau/_Travaux/Projects/Flutter_Plugins/brain_dev_tools_plugin
+
+  brain_dev_business: ^1.0.8
+    #path: /Users/jeanfritzduverseau/_Travaux/Projects/Flutter_Plugins/brain_dev_business_plugin
 
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
 
 
 flutter:
