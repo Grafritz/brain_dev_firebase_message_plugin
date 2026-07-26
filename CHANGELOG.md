@@ -1,3 +1,8 @@
+## 1.0.10
+* - Update Package...
+- brain_dev_tools: ^1.0.10
+- brain_dev_business: ^1.0.10
+
 ## 1.0.9
 * - Update Package...
 - brain_dev_tools: ^1.0.9
