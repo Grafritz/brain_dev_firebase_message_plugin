@@ -1,3 +1,9 @@
+## 1.0.9
+* - Update Package...
+- brain_dev_tools: ^1.0.9
+- brain_dev_business: ^1.0.9
+- flutter_lints: ^6.0.0
+
 ## 1.0.8
 * - Update Package...
 - brain_dev_tools: ^1.0.8
