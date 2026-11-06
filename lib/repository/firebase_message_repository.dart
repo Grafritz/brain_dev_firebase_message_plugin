@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:brain_dev_business/controllers/business_controller.dart';
-import 'package:brain_dev_business/entities/dao/properties/users_property.dart';
 import 'package:brain_dev_business/models/users_model.dart';
 import 'package:brain_dev_business/services/sender_firebase_message_service.dart';
 import 'package:brain_dev_tools/config/api/api_client.dart';
@@ -62,37 +61,45 @@ class FirebaseMessageRepository implements SenderFirebaseMessageService
 
   //region [ Device Token ]
   @override
-  Future<String?> addDevice({required String fcmNewToken}) async {
+  Future<String?> addDevice({required String fcmNewToken}) => _registerDevice(fcmNewToken, fName: 'addDevice');
+
+  @override
+  Future<String?> refreshDeviceToken({required String fcmNewToken}) => _registerDevice(fcmNewToken, fName: 'refreshDeviceToken');
+
+  /// Enregistre le jeton FCM de l'appareil dans LyricStream (`PUT api/notifications/devices`). L'utilisateur est celui du
+  /// jeton d'accès : aucun nom d'utilisateur n'est envoyé. Un appareil sans utilisateur connecté garde son jeton en
+  /// local ; il est enregistré à la prochaine connexion (voir `updateToken`).
+  Future<String?> _registerDevice(String fcmNewToken, {required String fName}) async {
     try {
       logCat('FCM Token: $fcmNewToken');
       apiClient.fcmToken = fcmNewToken;
-      String fcmOldToken = await getFcmToken();
-      String identifierForVendor = apiClient.getDeviceId();
+      final String fcmOldToken = sharedPreferences.getString(Constant.TOKEN) ?? '';
       UserModel user = Get.find<BusinessController>().userConnected;
+      if (!user.connecterYN || ApiConstantDev.urlMiddleware.isEmpty) {
+        setFcmToken(fcmNewToken);
+        return null;
+      }
 
-      String userId = user.userName;
-      String apiUrl = ApiConstantDev.apiUrlSetDeviceToken;
-      //region attributs
       DeviceInfoModel deviceInfo = DeviceInfoModel.fromJson(apiClient.deiceInfo.data);
-      deviceInfo.userName = userId;
-      deviceInfo.fcmOldToken = fcmOldToken;
-      deviceInfo.fcmNewToken = fcmNewToken;
-      deviceInfo.identifierForVendor = identifierForVendor;
-      deviceInfo.buildName = apiClient.packageInfo?.version ?? '';
-      deviceInfo.buildNumber = apiClient.packageInfo?.buildNumber ?? '';
-      var param = deviceInfo.toJson();
-      //endregion
-      var response = await apiClient.postData(
-          apiUrl: apiUrl, data: param, fName: 'addDevice');
+      final body = <String, dynamic>{
+        'token': fcmNewToken,
+        if (fcmOldToken.isNotEmpty && fcmOldToken != fcmNewToken) 'previousToken': fcmOldToken,
+        'platform': GetPlatform.isIOS ? 'ios' : 'android',
+        if (deviceInfo.model.isNotEmpty) 'model': deviceInfo.model,
+        if ((apiClient.packageInfo?.packageName ?? '').isNotEmpty) 'appPackage': apiClient.packageInfo!.packageName,
+      };
+      var response = await apiClient.putData(apiUrl: ApiConstantDev.urlMiddlewareDevices, data: body, fName: fName);
       if (response.statusCode == HttpStatus.ok) {
         setFcmToken(fcmNewToken);
         return response.body;
       }
     } catch (ex, trace) {
-      logError(ex, trace: trace, position: 'addDevice');
+      logError(ex, trace: trace, position: fName);
     }
     return null;
   }
+
+  //endregion
 
   @override
   Future updateToken() async {
@@ -129,35 +136,6 @@ class FirebaseMessageRepository implements SenderFirebaseMessageService
       });
     }
     return deviceToken;
-  }
-
-  @override
-  Future<String?> refreshDeviceToken({required String fcmNewToken}) async {
-    try {
-      logCat('FCM newToken: $fcmNewToken');
-      apiClient.fcmToken = fcmNewToken;
-      String fcmOldToken = await getFcmToken();
-      UserModel user = Get.find<BusinessController>().userConnected;
-      String userId = user.userName;
-      logCat(
-          'addDevice:: userId: $userId \n| FCM OLD Token: $fcmNewToken \n| FCM NEW Token: $fcmNewToken');
-      String apiUrl = ApiConstantDev.apiUrlRefreshDeviceToken;
-      //region attributs
-      Map<String, String> param = <String, String>{};
-      param[UsersProperty.userName.columnName] = userId;
-      param[UsersProperty.fcmOldToken.columnName] = fcmOldToken;
-      param[UsersProperty.fcmNewToken.columnName] = fcmNewToken;
-      //endregion
-      var response = await apiClient.postData(
-          apiUrl: apiUrl, data: param, fName: 'refreshDeviceToken');
-      if (response.statusCode == HttpStatus.ok) {
-        setFcmToken(fcmNewToken);
-        return response.body;
-      }
-    } catch (ex, trace) {
-      logError(ex, trace: trace, position: 'refreshDeviceToken');
-    }
-    return null;
   }
 
   //endregion
